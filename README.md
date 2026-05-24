@@ -1,6 +1,6 @@
 # expense_tracker
 
-Flutter + Firebase project for 5th semester.
+Flutter + Firebase project.
 
 ## Features
 - Expense tracking

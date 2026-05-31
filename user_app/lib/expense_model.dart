@@ -1,39 +1,49 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ExpenseModel {
-final String id ;
-final String title;
-final double amount;
-final String category;
-final DateTime date;
+  final String id;
+  final String title;
+  final double amount;
+  final String category;
+  final DateTime date;
+  final String note;
 
-ExpenseModel({
-  required this.id,
-  required this.title,
-  required this.amount,
-  required this.category,
-  required this.date,
+  ExpenseModel({
+    required this.id,
+    required this.title,
+    required this.amount,
+    required this.category,
+    required this.date,
+    required this.note,
+  });
 
-});
-Map<String, dynamic> toJson(){
-  return{
-    'id':id,
-    'title':title,
-    'amount':amount,
-    'category':category,
-    'date':date.toIso8601String(),
+  // SAVE TO FIRESTORE
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'amount': amount,
+      'category': category,
+      'note': note,
 
-  };
-}
-factory ExpenseModel.fromJson(Map<String, dynamic>json){
-  return ExpenseModel(
-    
-    id:json['id'],
-    title: json['title'],
-    amount: json['amount'].toDouble(),
-    category: json['category'],
-    date: json['date']
+      // 🔥 IMPORTANT FIX
+      'date': Timestamp.fromDate(date),
+    };
+  }
 
-  );
-}
+  // READ FROM FIRESTORE
+  factory ExpenseModel.fromJson(
+    Map<String, dynamic> json,
+    String id,
+  ) {
+    return ExpenseModel(
+      id: id,
+      title: json['title'] ?? '',
+      amount: (json['amount'] ?? 0).toDouble(),
+      category: json['category'] ?? '',
+      note: json['note'] ?? '',
 
-
+      // 🔥 FIX: Timestamp → DateTime
+      date: (json['date'] as Timestamp).toDate(),
+    );
+  }
 }

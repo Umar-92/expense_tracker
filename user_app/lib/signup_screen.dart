@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'signup_screen.dart';
+
 import 'auth_provider.dart';
-import 'home_screen.dart';
+import 'login_screen.dart';
 import 'app_theme.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class SignupScreen extends StatefulWidget {
+  const SignupScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _SignupScreenState extends State<SignupScreen>
     with SingleTickerProviderStateMixin {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  bool obscurePassword = true;
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  bool _obscurePassword = true;
 
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
@@ -41,34 +42,38 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void dispose() {
     _animController.dispose();
+    nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
   }
 
   // ── IDENTICAL LOGIC ────────────────────────────────────────────────────────
-  void loginUser() async {
+  Future<void> signUpUser() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider =
+        Provider.of<AuthProvider>(context, listen: false);
 
-    final user = await authProvider.login(
+    final user = await authProvider.signUp(
+      name: nameController.text.trim(),
       email: emailController.text.trim(),
       password: passwordController.text.trim(),
     );
 
+    if (!mounted) return;
+
     if (user != null) {
-      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Account Created')),
+      );
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Invalid email or password"),
-          backgroundColor: AppColors.error,
-        ),
+        const SnackBar(content: Text('Signup Failed')),
       );
     }
   }
@@ -92,28 +97,26 @@ class _LoginScreenState extends State<LoginScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 60),
+                      const SizedBox(height: 20),
 
-                      // ── Logo ───────────────────────────────────────────────
-                      Center(
+                      // ── Back button ────────────────────────────────────────
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
                         child: Container(
-                          width: 72,
-                          height: 72,
+                          width: 44,
+                          height: 44,
                           decoration: BoxDecoration(
-                            gradient: AppGradients.primary,
-                            borderRadius: BorderRadius.circular(22),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.4),
-                                blurRadius: 24,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
+                            color: AppColors.elevated,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: AppColors.border,
+                              width: 1.2,
+                            ),
                           ),
                           child: const Icon(
-                            Icons.wallet_rounded,
-                            color: Colors.white,
-                            size: 36,
+                            Icons.arrow_back_rounded,
+                            color: AppColors.textPrimary,
+                            size: 20,
                           ),
                         ),
                       ),
@@ -122,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen>
 
                       // ── Headline ───────────────────────────────────────────
                       const Text(
-                        "Welcome back",
+                        "Create account",
                         style: TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 32,
@@ -132,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                       const SizedBox(height: 6),
                       const Text(
-                        "Sign in to track your expenses",
+                        "Start tracking your expenses today",
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 15,
@@ -140,6 +143,30 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
 
                       const SizedBox(height: 44),
+
+                      // ── Name ───────────────────────────────────────────────
+                      TextFormField(
+                        controller: nameController,
+                        keyboardType: TextInputType.name,
+                        textCapitalization: TextCapitalization.words,
+                        style: const TextStyle(color: AppColors.textPrimary),
+                        decoration: appInputDecoration(
+                          label: "Full name",
+                          prefixIcon: const Icon(
+                            Icons.person_outline_rounded,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Enter your name";
+                          }
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 16),
 
                       // ── Email ──────────────────────────────────────────────
                       TextFormField(
@@ -170,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen>
                       // ── Password ───────────────────────────────────────────
                       TextFormField(
                         controller: passwordController,
-                        obscureText: obscurePassword,
+                        obscureText: _obscurePassword,
                         style: const TextStyle(color: AppColors.textPrimary),
                         decoration: appInputDecoration(
                           label: "Password",
@@ -181,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              obscurePassword
+                              _obscurePassword
                                   ? Icons.visibility_outlined
                                   : Icons.visibility_off_outlined,
                               color: AppColors.textSecondary,
@@ -189,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             onPressed: () {
                               setState(() {
-                                obscurePassword = !obscurePassword;
+                                _obscurePassword = !_obscurePassword;
                               });
                             },
                           ),
@@ -199,17 +226,17 @@ class _LoginScreenState extends State<LoginScreen>
                             return "Enter password";
                           }
                           if (value.length < 6) {
-                            return "Password must be at least 6 characters";
+                            return "Minimum 6 characters";
                           }
                           return null;
                         },
                       ),
 
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 36),
 
-                      // ── Login button ───────────────────────────────────────
+                      // ── Create Account button ──────────────────────────────
                       authProvider.isLoading
-                          ? Center(
+                          ? const Center(
                               child: SizedBox(
                                 width: 26,
                                 height: 26,
@@ -220,9 +247,9 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                             )
                           : GradientButton(
-                              onPressed: loginUser,
+                              onPressed: signUpUser,
                               child: const Text(
-                                "Sign In",
+                                "Create Account",
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
@@ -234,27 +261,20 @@ class _LoginScreenState extends State<LoginScreen>
 
                       const SizedBox(height: 28),
 
-                      // ── Sign up link ───────────────────────────────────────
+                      // ── Sign in link ───────────────────────────────────────
                       Center(
                         child: GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SignupScreen(),
-                              ),
-                            );
-                          },
+                          onTap: () => Navigator.pop(context),
                           child: RichText(
                             text: const TextSpan(
-                              text: "Don't have an account?  ",
+                              text: "Already have an account?  ",
                               style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 14,
                               ),
                               children: [
                                 TextSpan(
-                                  text: "Sign up",
+                                  text: "Sign in",
                                   style: TextStyle(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w600,

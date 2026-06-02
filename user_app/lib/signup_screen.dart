@@ -48,32 +48,38 @@ class _SignupScreenState extends State<SignupScreen>
     super.dispose();
   }
 
-  // ── IDENTICAL LOGIC ────────────────────────────────────────────────────────
   Future<void> signUpUser() async {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider =
         Provider.of<AuthProvider>(context, listen: false);
 
-    final user = await authProvider.signUp(
-      name: nameController.text.trim(),
-      email: emailController.text.trim(),
-      password: passwordController.text.trim(),
-    );
-
-    if (!mounted) return;
-
-    if (user != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Account Created')),
+    try {
+      final user = await authProvider.signUp(
+        name: nameController.text.trim(),
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
       );
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-    } else {
+
+      if (!mounted) return;
+
+      if (user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account Created')),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      String message = e.toString().replaceAll('Exception: ', '');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Signup Failed')),
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red.shade700,
+        ),
       );
     }
   }

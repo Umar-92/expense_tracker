@@ -7,23 +7,39 @@ class DatabaseService {
 
   // Streams for Dashboard
   Stream<int> getTotalUsersCount() {
-    return _db.collection('users').snapshots().map((snapshot) => snapshot.docs.length);
+    return _db.collection('users').snapshots().map((snapshot) {
+      return snapshot.docs.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return data['role'] != 'admin';
+      }).length;
+    });
   }
 
   Stream<int> getTotalExpensesCount() {
-    return _db.collection('expenses').snapshots().map((snapshot) => snapshot.docs.length);
+    return _db.collectionGroup('expenses').snapshots().map((snapshot) => snapshot.docs.length);
   }
 
   // Get all users
   Stream<List<UserModel>> getUsers() {
-    return _db.collection('users').snapshots().map((snapshot) =>
-        snapshot.docs.map((doc) => UserModel.fromMap(doc.data(), doc.id)).toList());
+    return _db.collection('users').snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => UserModel.fromMap(doc.data(), doc.id))
+          .where((user) => user.role != 'admin')
+          .toList();
+    });
   }
 
   // Get all expenses
   Stream<List<ExpenseModel>> getExpenses() {
-    return _db.collection('expenses').orderBy('date', descending: true).snapshots().map((snapshot) =>
-        snapshot.docs.map((doc) => ExpenseModel.fromMap(doc.data(), doc.id)).toList());
+    return _db.collectionGroup('expenses').snapshots().map((snapshot) {
+      final expenses = snapshot.docs
+          .map((doc) => ExpenseModel.fromSnapshot(doc))
+          .where((expense) => expense.userId.isNotEmpty)
+          .toList();
+      // Sort locally to avoid requiring a Firebase composite index
+      expenses.sort((a, b) => b.date.compareTo(a.date));
+      return expenses;
+    });
   }
 
   // Delete user (Optional as per spec)

@@ -56,11 +56,14 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       debugPrint("AUTH ERROR CODE: ${e.code}");
       debugPrint("AUTH ERROR MESSAGE: ${e.message}");
+      if (e.code == 'email-already-in-use') {
+        throw Exception('This email is already registered. Please login instead.');
+      }
+      throw Exception(e.message ?? 'Authentication failed.');
     } catch (e) {
       debugPrint("GENERAL ERROR: $e");
+      throw Exception('An unexpected error occurred.');
     }
-
-    return null;
   }
 
   // LOGIN
